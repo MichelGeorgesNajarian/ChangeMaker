@@ -151,7 +151,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="changeReturn.h" />
+    <ClInclude Include="changeSet.h" />
+    <ClInclude Include="changeTester.h" />
+    <ClInclude Include="doubleHash.h" />
+    <ClInclude Include="Exception.h" />
+    <ClInclude Include="memManagement.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="runLoop.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ChangeMaker.cpp" />

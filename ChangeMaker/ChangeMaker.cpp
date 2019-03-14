@@ -3,10 +3,79 @@
 
 #include "pch.h"
 #include <iostream>
+#include <exception>
+#include "changeTester.h"
 
-int main()
-{
-    std::cout << "Hello World!\n"; 
+class badUsierInput : public std::exception {
+	virtual const char* what() const throw() {
+		return "Invalid entry, try again.";
+	}
+} invalidEntry;
+
+
+int main(int argc, char *argv[]) {
+
+	bool repeat = true;
+	const char *billName[] = { "$100", "$50", "$20", "$10", "$5" };
+	int bills[] = { 0, 0, 0, 0, 0 };
+	const char *coinName[] = { "$2", "$1", "25 cents", "10 cents", "5 cents" };
+	int coins[] = { 0, 0, 0, 0, 0 };
+	while (repeat) {
+		for (int i = 0; i < 5; i++) {
+			std::cout << "Please enter number of " << billName[i] << " bills and then press enter: ";
+			int temp;
+			std::cin >> temp;
+			try
+			{
+				if (!(std::cin >> temp)) {
+					throw invalidEntry;
+				} else {
+					bills[i] = temp;
+				}
+			}
+			catch (std::exception& e)
+			{
+				std::cout << std::endl << e.what() << std::endl;
+				i--;
+			}
+		}
+
+		std::cout << std::endl << std::endl;
+
+		for (int i = 0; i < 5; i++) {
+			std::cout << "You have entered " << bills[i] << " of " << billName[i] << std::endl;
+		}
+
+		std::cout << std::endl << "Are there any modifications to make? [Y/N] ? ";
+		char mod;
+		std::cin >> mod;
+		std::cout << std::endl << std::endl;
+
+		switch (mod) {
+		case 'Y' || 'y': {
+			repeat = true;
+			break;
+		}
+		case 'y': {
+			repeat = true;
+			break;
+		}
+		case 'N': {
+			repeat = false;
+			break;
+		}
+		case 'n': {
+			repeat = false;
+			break;
+		}
+		default: {
+			repeat = true;
+		}
+		}
+	}
+
+
+	return 0;
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
