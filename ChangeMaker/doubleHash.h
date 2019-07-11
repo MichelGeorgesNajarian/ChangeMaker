@@ -3,6 +3,8 @@
 
 #include <exception>
 
+//class to keep track of how many of each type of currency there currently is
+
 // value is in cents so 500 cents = 5 dollars
 enum MONEY { FIVE_C = 5, TEN_C = 10, TWENTYFIVE_C = 25, ONE_C = 100, TWO_C = 200, FIVE_B = 500, TEN_B = 1000, TWENTY_B = 2000, FIFTY_B = 5000, HUNDRED_B = 10000, EMPTY = -1 };
 
@@ -14,10 +16,12 @@ public:
 	doubleHash();
 	~doubleHash();
 	void updateMoney(T const &, int const); // type: coin or bill, T is which value we're trying to update amount, int is how much we add or remove
-	T numItems(int) const; //return the number of items of value of argument we have
+	T numItems(int const) const; //return the number of items of value of argument we have
 	bool empty(); // verifying if the array is empty, a
 	void clear();
 	int size();
+	int arraySizes();
+	int *valArray();
 
 private:
 	float sum;
@@ -66,13 +70,14 @@ template<typename T>
 void doubleHash<T>::updateMoney(T const &obj, int const amount) {
 	int num = h1(obj); // first matched index
 	int step = h2(obj); // next jumping value
+	
 	while (1) {
 		try {
+			int tempAmount;
 			// if index not assigned to anything
 			if (money_val[num] == EMPTY) {
 				if (amount < 0) {
-					int tempAmount;
-					throw tempAmount;
+					throw -1;
 				}
 				else {
 					money_val[num] = static_cast<MONEY>(obj); // ERROR HERE money_val is of type MONEY and obj is of type T
@@ -82,10 +87,9 @@ void doubleHash<T>::updateMoney(T const &obj, int const amount) {
 			} // doing seperatly in order to have better time efficiency and not always execute money_val[num] = obj
 		      // this will update the number of coins/bills
 			else if (money_val[num] == obj) {
-				int tempAmount;
 				tempAmount = money_count[num] += amount;
 				if (tempAmount < 0) {
-					throw tempAmount;
+					throw -1;
 				}
 				else {
 					money_count[num] += amount;
@@ -107,7 +111,7 @@ void doubleHash<T>::updateMoney(T const &obj, int const amount) {
 
 // returning num of coins or bills of value obj
 template<typename T>
-T doubleHash<T>::numItems(int obj) const {
+T doubleHash<T>::numItems(const int obj) const {
 	int num = h1(obj);
 	int step = h2(obj);
 	for (int i = 0; i < array_size; i++) {
@@ -142,6 +146,70 @@ void doubleHash<T>::clear() {
 template<typename T>
 int doubleHash<T>::size() {
 	return count;
+}
+
+template<typename T>
+int doubleHash<T>::arraySizes()
+{
+	return array_size;
+}
+
+template<typename T>
+int * doubleHash<T>::valArray()
+{
+	int j = 0;
+	static int *arrayMon = new int[array_size];
+	for (int i = HUNDRED_B; i != EMPTY; i--)
+	{
+		MONEY mon = static_cast<MONEY>(i);
+
+		switch (mon)
+		{
+		case FIVE_C:
+			arrayMon[j] = i;
+			j++;
+			break;
+		case TEN_C:
+			arrayMon[j] = i;
+			j++;
+			break;
+		case TWENTYFIVE_C:
+			arrayMon[j] = i;
+			j++;
+			break;
+		case ONE_C:
+			arrayMon[j] = i;
+			j++;
+			break;
+		case TWO_C:
+			arrayMon[j] = i;
+			j++;
+			break;
+		case FIVE_B:
+			arrayMon[j] = i;
+			j++;
+			break;
+		case TEN_B:
+			arrayMon[j] = i;
+			j++;
+			break;
+		case TWENTY_B:
+			arrayMon[j] = i;
+			j++;
+			break;
+		case FIFTY_B:
+			arrayMon[j] = i;
+			j++;
+			break;
+		case HUNDRED_B:
+			arrayMon[j] = i;
+			j++;
+			break;
+		default:
+			break;
+		}
+	}
+	return arrayMon;
 }
 
 //first hashing function

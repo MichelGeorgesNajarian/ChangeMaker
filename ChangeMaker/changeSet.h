@@ -4,7 +4,9 @@
 #ifndef nullptr
 #define nullptr 0
 #endif // !nullptr
-
+#ifndef INT_MAX
+#define INT_MAX -1
+#endif // !INT_MAX
 #include <iostream>
 #include "doubleHash.h"
 
@@ -22,10 +24,15 @@ public:
 
 	// extend the max value buildable
 	void extendMax(char *, int); // type coin or bill | int is max value to build
+	void extendNumItems(); //extend max value buildable
 	void maxNumItems(char *, int const, int const &);
 	//push new amounts to arrays bills or coins
-	void push(char *, int const, int const &); // char: type coin or bill | int const: first index of array, value we're trying to build, int const &: value we're trying to push
-	int pop();	
+	void unionSet(char *, int const, int const &); // char: type coin or bill | int const: first index of array, value we're trying to build, int const &: value we're trying to push
+	int pop();
+	void clear();
+	int minNumItems(int const &);
+	doubleHash<int> *dh;
+	const int *allCoinVals;
 	
 private:
 	// 2D array for dynamic programming calculating bills from 1 to value
@@ -43,10 +50,12 @@ private:
 	*/
 	//same as above but for coins now
 	int **coins;
+	int *numItems;
 	int count; //will update in order to know which row has the max count so that if a row has the maxArraySize amount of vals in array, will update array
 	int coinMaxBuild = 0;
 	int billMaxBuild = 0;
 	int maxArraySize;
+	int biggestSum = 0;
 
 	//need to do hash table for number of coins available and number of bills available and decrement each time by one whenever we use a coin/bill
 };
@@ -58,19 +67,28 @@ changeSet::changeSet(int n) {
 	for (int i = 0; i < n; i++) {
 		coins[i] = new int[n];
 		for (int j = 0; j < n; j++)
-			coins[i][j] = 0;
+			coins[i][j] = INT_MAX;
 	}
 	//doing the same for the bills
 	bills = new int*[n];
 	for (int i = 0; i < n; i++) {
 		bills[i] = new int[n];
 		for (int j = 0; j < n; j++) {
-			bills[i][j] = 0;
+			bills[i][j] = INT_MAX;
 		}
+	}
+	//array which states the min num of items needed to build value
+	biggestSum = billMaxBuild * 100 + coinMaxBuild * 100;
+	numItems = new int[biggestSum];
+	numItems[0] = 0;
+	for (int i = 1; i < biggestSum; i++) {
+		numItems[i] = INT_MAX;
 	}
 	maxArraySize = n;
 	billMaxBuild = n;
 	coinMaxBuild = n;
+	dh = new doubleHash<int>();
+	allCoinVals = dh->valArray();
 }
 
 changeSet::~changeSet() {
@@ -85,6 +103,9 @@ changeSet::~changeSet() {
 	}
 	delete[] bills;
 	bills = nullptr;
+	delete[] numItems;
+	numItems = nullptr;
+	biggestSum = 0;
 	count = 0;
 }
 
@@ -150,6 +171,18 @@ void changeSet::extendMax(char *type, int newVal)  {
 	temp = newArray;
 }
 
+void changeSet::extendNumItems()
+{
+	int *temp = new int[biggestSum];
+	temp = numItems;
+	delete[] numItems;
+	numItems = new int[2 * biggestSum];
+	for (int i = 0; i < biggestSum; i++) {
+		numItems[i] = temp[i];
+	}
+	biggestSum *= 2;
+}
+
 void changeSet::maxNumItems(char *type , int const valBuild , int const &currVal) {
 	// updateing the new max array which is the number of bills or coins used to build amount
 	int newMax = 2 * maxArraySize;
@@ -193,7 +226,7 @@ void changeSet::maxNumItems(char *type , int const valBuild , int const &currVal
 	count++;
 }
 
-void changeSet::push(char *type, int const valBuild , int const &currVal) {
+void changeSet::unionSet(char *type, int const valBuild , int const &currVal) {
 	//maximum amount we can build so far in array depending on type
 	int maxType;
 	//assigning correct value
@@ -212,19 +245,62 @@ void changeSet::push(char *type, int const valBuild , int const &currVal) {
 		maxNumItems(type, valBuild, currVal);
 	}
 	// value is within bounds of array so just put in correct spot
-	else {
-		for (int i = 0; i <= count; i++) { // less than count since max coins that a value has so far is count so automatically for all values, at count, the value is 0
-			if (type == "coin" && coins[valBuild][i] == 0) {
-				coins[valBuild][i] = currVal;
-			} 	else if (type == "bill") {
-				bills[valBuild][i] = currVal;
-			}
+	for (int i = 0; i <= count; i++) { // less than count since max coins that a value has so far is count so automatically for all values, at count, the value is 0
+		if (type == "coin" && coins[valBuild][i] == 0) {
+			coins[valBuild][i] = currVal;
+		} 	else if (type == "bill") {
+			bills[valBuild][i] = currVal;
 		}
 	}
 }
 //if ever needed
 int changeSet::pop() {
 	return 0;
+}
+
+void changeSet::clear()
+{
+	for (int i = 0; i < maxArraySize; i++) {
+		for (int j = 0; j < coinMaxBuild; j++) {
+			coins[i][j] = 0;
+		}
+		for (int j = 0; j < billMaxBuild; j++) {
+			bills[i][j] = 0;
+		}
+	}
+}
+
+int changeSet::minNumItems(int const &newValCalc)
+{
+	// If array isn't big enough to calculate this value, then extend it
+	if (newValCalc > biggestSum) {
+		extendNumItems();
+		//call function again and then return
+		int returnVal = minNumItems(newValCalc);
+		return returnVal;
+	}
+	//if the number of coins needed for newValCalc is known then return it
+	if (numItems[newValCalc] != INT_MAX) {
+		return numItems[newValCalc];
+	}
+	int temp;
+	int min = INT_MAX;
+	// go through each available coins
+	for (int i = 0; i < dh->arraySizes(); i++) {
+		// only verify if the value of the currency is smaller than the value we're trying to build
+		/*
+			TO DO, CREATE A NEW OBJECT FROM DOUBLEHASH AND MAKE IT BE THE ARRAY WHERE COINS ARE STORED
+			SINCE IF NOT< A LOT OF EMPTY SPOTS IN ARRAY AS VALUES GO UP BY 5 CENTS EVERYTIME
+		*/
+		if (allCoinVals[i] < newValCalc) {
+			temp = 1 + minNumItems(newValCalc - allCoinVals[i]);
+			if (temp < min) {
+				min = temp;
+			}
+		}
+	}
+
+	return min;
 }
 
 #endif // !CHANGESET_H
